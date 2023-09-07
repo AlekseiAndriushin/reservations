@@ -18,11 +18,12 @@ var (
 	ctx = context.Background()
 )
 
-func seedHotel(name, location string) {
+func seedHotel(name string, location string, rating int) {
 	hotel := types.Hotel{
 		Name: name,
 		Location: location,
 		Rooms: []primitive.ObjectID{},
+		Rating: rating,
 	}
 	rooms := []types.Room{
 		{
@@ -54,9 +55,9 @@ func seedHotel(name, location string) {
 }
 
 func main() {
-	seedHotel("Grand hotel", "Azors")
-	seedHotel("The advanced hotel", "Madeira")
-	seedHotel("Don't drink in your sleep", "London")
+	seedHotel("Grand hotel", "Azors", 5)
+	seedHotel("The advanced hotel", "Madeira", 2)
+	seedHotel("Don't drink in your sleep", "London",1 )
 }
 
 func init () {
@@ -68,7 +69,7 @@ func init () {
 	if err := client.Database(db.DBNAME).Drop(ctx); err != nil {
 		log.Fatal(err)
 	}
-	
+
 	hotelStore = db.NewMongoHotelStore(client)
 	roomStore = db.NewMongoRoomStore(client, hotelStore)
 }
