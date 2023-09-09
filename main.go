@@ -13,8 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const userColl = "users"
-
 var config = fiber.Config{
     ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return c.JSON(map[string]string{"error": err.Error()})
@@ -22,10 +20,8 @@ var config = fiber.Config{
 }
 
 func main() {
-	now := 
 	listenAddr := flag.String("listenAddr", ":3000", "The listend address of the API server")
 	flag.Parse()
-
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
 	if err != nil {
@@ -36,15 +32,18 @@ func main() {
 	hotelStore = db.NewMongoHotelStore(client)
 	roomStore = db.NewMongoRoomStore(client, hotelStore)
 	userStore = db.NewMongoUserStore(client)
+	bookingStore = db.NewMongoBookingStore(client)
 	store = &db.Store{
 		Hotel: hotelStore,
 		Room: roomStore,
 		User: userStore,
+		Booking: bookingStore,
 	}
 	userHandler = api.NewUserHandler(db.NewMongoUserStore(client))
 	hotelHandler = api.NewHotelHandler(store)
 	authHandler = api.NewAuthHandler(userStore)
 	roomHandler = api.NewRoomHandler(store)
+	// bookingHandler = api.NewRoomHandler(store)
   app = fiber.New(config)
 	auth = app.Group("/api") 
 	apiv1 = app.Group("/api/v1", middleware.JWTAuthentication(userStore))
@@ -66,6 +65,8 @@ func main() {
 	apiv1.Get("/hotel/:id",hotelHandler.HanldeGetHotel)
 	apiv1.Get("/hotel/:id/rooms",hotelHandler.HandleGetRooms)
 
+	//book handlers
+	apiv1.Get("/room", roomHandler.HanlderGetRooms)
 	apiv1.Post("/room/:id/book", roomHandler.HandleBookRoom)
   app.Listen(*listenAddr)
 }
