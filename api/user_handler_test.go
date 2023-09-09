@@ -37,7 +37,7 @@ func setup(t *testing.T) *testDb {
 	}
 
 	return &testDb{
-		UserStore: db.NewMongoUserStore(client, dbname),
+		UserStore: db.NewMongoUserStore(client),
 	}
 }
 
@@ -50,10 +50,10 @@ func TestPostUser(t *testing.T) {
 	app.Post("/", userHandler.HandlePostUser)
 
 	params := types.CreateUserParams{
-		Email: "some@alex.com",
+		Email: "alex@alex.com",
 		FirstName: "Alex",
 		LastName: "pfgdfpdfgd",
-		Password: "pgfdpfdgpdfgp45t4t",
+		Password: "superpasswordhehe123",
 	}
 
 	b, _ := json.Marshal(params)
