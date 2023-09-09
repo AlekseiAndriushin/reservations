@@ -34,13 +34,13 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
-type genericReps struct {
+type genericResp struct {
 	Type string `json:"type"`
 	Msg string `json:"msg"`
 }
 
 func invalidCredentials(c *fiber.Ctx) error {
-	return c.Status(http.StatusBadRequest).JSON(genericReps{
+	return c.Status(http.StatusBadRequest).JSON(genericResp{
 				Type: "error",
 				Msg: "invalid credentials",
 			})
@@ -72,9 +72,9 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 
 func createTokenFromUser(user *types.User) string {
 	now := time.Now()
-	expires := now.Add(time.Hour * 4).Unix()
+	expires := now.Add(time.Hour * 24).Unix()
 	claims := jwt.MapClaims{
-		"userID": user,
+		"id": user.ID,
 		"email": user.Email,
 		"expires": expires,
 	}

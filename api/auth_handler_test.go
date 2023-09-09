@@ -95,7 +95,7 @@ func TestAuthenticateWithWrongPassword(t *testing.T) {
 		t.Fatalf("expected http status of 400 but got %d", resp.StatusCode)
 	}
 
-	var genResp genericReps 
+	var genResp genericResp 
 	if err := json.NewDecoder(resp.Body).Decode(&genResp); err != nil {
 		t.Fatal(err)
 	}
