@@ -9,7 +9,6 @@ import (
 
 type HotelHandler struct {
 	store *db.Store
-
 }
 
 func NewHotelHandler (store *db.Store) *HotelHandler {
