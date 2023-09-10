@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"github.com/AlexeyAndryushin/reservations/api"
 	"github.com/AlexeyAndryushin/reservations/db"
 	"github.com/AlexeyAndryushin/reservations/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -34,6 +36,8 @@ func seedUser(fname, lname, email string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Printf("%s -> %s\n", user.Email, api.CreateTokenFromUser(user))
 
 }
 
@@ -66,10 +70,11 @@ func seedHotel(name string, location string, rating int) {
 	}
 	for _, room := range rooms {
 		room.HotelID = insertedHotel.ID
-		_, err := roomStore.InsertRoom(ctx, &room)
+		insertedRoom, err := roomStore.InsertRoom(ctx, &room)
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Printf("room ->%s\n", insertedRoom.ID)
 	}
 }
 
