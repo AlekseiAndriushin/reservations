@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/AlexeyAndryushin/reservations/db"
+	"github.com/AlexeyAndryushin/reservations/db/fixtures"
 	"github.com/AlexeyAndryushin/reservations/types"
 	"github.com/gofiber/fiber/v2"
 )
@@ -36,10 +37,10 @@ func insertTestUser(t *testing.T, userStore db.UserStore) *types.User {
 func TestAuthenticate(t *testing.T) {
 	tdb := setup(t)
 	defer tdb.teardown(t)
-	insertTestUser(t, tdb.UserStore)
+	insertTestUser(t, tdb.User)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(tdb.UserStore)
+	authHandler := NewAuthHandler(tdb.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	params := AuthParams {
@@ -69,43 +70,36 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestAuthenticateWithWrongPassword(t *testing.T) {
-	tdb := setup(t)
+		tdb := setup(t)
 	defer tdb.teardown(t)
-	insertTestUser(t, tdb.UserStore)
+	fixtures.AddUser(tdb.Store, "alex", "foo", false)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(tdb.UserStore)
+	authHandler := NewAuthHandler(tdb.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
-	params := AuthParams {
+	params := AuthParams{
 		Email: "alex@alex.com",
 		Password: "superpasswordhehe123_not_correct",
 	}
 	b, _ := json.Marshal(params)
-
 	req := httptest.NewRequest("POST", "/auth", bytes.NewReader(b))
-	req.Header.Add("Content-Type", "application")
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := app.Test(req)
-	fmt.Println(resp.Status)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected http status of 400 but got %d", resp.StatusCode)
 	}
-
-	var genResp genericResp 
+	var genResp genericResp
 	if err := json.NewDecoder(resp.Body).Decode(&genResp); err != nil {
 		t.Fatal(err)
 	}
-
-	if genResp.Type != "err" {
+	if genResp.Type != "error" {
 		t.Fatalf("expected gen response type to be error but got %s", genResp.Type)
 	}
 	if genResp.Msg != "invalid credentials" {
 		t.Fatalf("expected gen response msg to be <invalid credentials> but got %s", genResp.Msg)
 	}
 }
-
-  
