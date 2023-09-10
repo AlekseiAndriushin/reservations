@@ -4,89 +4,23 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/AlexeyAndryushin/reservations/api"
 	"github.com/AlexeyAndryushin/reservations/db"
-	"github.com/AlexeyAndryushin/reservations/types"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/AlexeyAndryushin/reservations/db/fixtures"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	client *mongo.Client
-	roomStore db.RoomStore
-	hotelStore db.HotelStore
-	userStore db.UserStore
 	ctx = context.Background()
 )
 
-func seedUser(fname, lname, email string) {
-	user, err := types.NewUserFromParams(types.CreateUserParams{
-		Email: email,
-		FirstName: fname,
-		LastName: lname,
-		Password: "superpasswordhehe123",
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = userStore.InsertUser(context.TODO(), user)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("%s -> %s\n", user.Email, api.CreateTokenFromUser(user))
-
-}
-
-func seedHotel(name string, location string, rating int) {
-	hotel := types.Hotel{
-		Name: name,
-		Location: location,
-		Rooms: []primitive.ObjectID{},
-		Rating: rating,
-	}
-	rooms := []types.Room{
-		{
-			Size: "small",
-			BasePrice: 88.9,
-		},
-		{
-			Size: "normal",
-			BasePrice: 500,
-		},
-		{
-			Size: "big",
-			BasePrice: 2500,
-		},
-	}
-
-
-	insertedHotel, err := hotelStore.InsertHotel(ctx, &hotel)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, room := range rooms {
-		room.HotelID = insertedHotel.ID
-		insertedRoom, err := roomStore.InsertRoom(ctx, &room)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("room ->%s\n", insertedRoom.ID)
-	}
-}
 
 func main() {
-	seedHotel("Grand hotel", "Azors", 5)
-	seedHotel("The advanced hotel", "Madeira", 2)
-	seedHotel("Don't drink in your sleep", "London",1 )
-	seedUser("alex", "alex", "alex@alex.com")
-}
-
-func init () {
-	var err error
+		var err error
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +29,26 @@ func init () {
 		log.Fatal(err)
 	}
 
-	hotelStore = db.NewMongoHotelStore(client)
-	roomStore = db.NewMongoRoomStore(client, hotelStore)
-	userStore = db.NewMongoUserStore(client)
+	hotelStore := db.NewMongoHotelStore(client)
+	store := &db.Store{
+		User:    db.NewMongoUserStore(client),
+		Booking: db.NewMongoBookingStore(client),
+		Room:    db.NewMongoRoomStore(client, hotelStore),
+		Hotel:   hotelStore,
+	}
+
+	user := fixtures.AddUser(store, "alex", "alex", false)
+	fmt.Println("alex ->", api.CreateTokenFromUser(user))
+	admin := fixtures.AddUser(store, "admin", "admin", true)
+	fmt.Println("admin ->", api.CreateTokenFromUser(admin))
+	hotel := fixtures.AddHotel(store, "Grand hotel", "Azors", 5, nil)
+	room := fixtures.AddRoom(store, "large", true, 88.44, hotel.ID)
+	booking := fixtures.AddBooking(store, user.ID, room.ID, time.Now(), time.Now().AddDate(0, 0, 5))
+	fmt.Println("booking ->", booking.ID)
+
+	for i := 0; i < 100; i++ {
+		name := fmt.Sprintf("random hotel name %d", i)
+		location := fmt.Sprintf("location %d", i)
+		fixtures.AddHotel(store, name, location, rand.Intn(5)+1, nil)
+	}
 }
