@@ -19,7 +19,7 @@ type BookingStore interface {
 
 type MongoBookingStore struct {
 	client *mongo.Client
-	coll *mongo.Collection
+	coll   *mongo.Collection
 
 	BookingStore
 }
@@ -28,7 +28,7 @@ func NewMongoBookingStore(client *mongo.Client) *MongoBookingStore {
 	dbname := os.Getenv(MongoDBNameEnvName)
 	return &MongoBookingStore{
 		client: client,
-		coll: client.Database(dbname).Collection("bookings"),
+		coll:   client.Database(dbname).Collection("bookings"),
 	}
 }
 
@@ -54,12 +54,11 @@ func (s *MongoBookingStore) GetBookings(ctx context.Context, filter bson.M) ([]*
 	return bookings, nil
 }
 
-func (s *MongoBookingStore) GetBookingByID (ctx context.Context, id string) (*types.Booking, error) {
+func (s *MongoBookingStore) GetBookingByID(ctx context.Context, id string) (*types.Booking, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
-
 	var booking types.Booking
 	if err := s.coll.FindOne(ctx, bson.M{"_id": oid}).Decode(&booking); err != nil {
 		return nil, err
@@ -67,7 +66,7 @@ func (s *MongoBookingStore) GetBookingByID (ctx context.Context, id string) (*ty
 	return &booking, nil
 }
 
-func (s *MongoBookingStore) InsertBooking (ctx context.Context, booking *types.Booking) (*types.Booking, error) {
+func (s *MongoBookingStore) InsertBooking(ctx context.Context, booking *types.Booking) (*types.Booking, error) {
 	resp, err := s.coll.InsertOne(ctx, booking)
 	if err != nil {
 		return nil, err
