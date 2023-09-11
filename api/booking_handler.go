@@ -1,8 +1,6 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/AlexeyAndryushin/reservations/db"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,56 +16,45 @@ func NewBookingHandler(store *db.Store) *BookingHandler {
 	}
 }
 
-// this needs to be admin auth
-func (h *BookingHandler) HandleGetBookings(c *fiber.Ctx) error {
-	bookings, err := h.store.Booking.GetBookings(c.Context(), bson.M{})
-	if err != nil {
-		return err
-	}
-	return c.JSON(bookings)
-}
-
 func (h *BookingHandler) HandleCancelBooking(c *fiber.Ctx) error {
 	id := c.Params("id")
 	booking, err := h.store.Booking.GetBookingByID(c.Context(), id)
 	if err != nil {
-		return err
+		return ErrNotResourceNotFound("booking")
 	}
 	user, err := getAuthUser(c)
 	if err != nil {
-		return err
+		return ErrUnAuthorized()
 	}
 	if booking.UserID != user.ID {
-		return c.Status(http.StatusUnauthorized).JSON(genericResp{
-			Type: "error",
-			Msg: "not authorized",
-		})
+		return ErrUnAuthorized()
 	}
 	if err := h.store.Booking.UpdateBooking(c.Context(), c.Params("id"), bson.M{"canceled": true}); err != nil {
 		return err
 	}
-	return c.JSON(genericResp{
-		Type: "msg",
-		Msg: "updated",
-	})
+	return c.JSON(genericResp{Type: "msg", Msg: "updated"})
 }
 
-// this needs to be user auth
+func (h *BookingHandler) HandleGetBookings(c *fiber.Ctx) error {
+	bookings, err := h.store.Booking.GetBookings(c.Context(), bson.M{})
+	if err != nil {
+		return ErrNotResourceNotFound("bookings")
+	}
+	return c.JSON(bookings)
+}
+
 func (h *BookingHandler) HandleGetBooking(c *fiber.Ctx) error {
 	id := c.Params("id")
 	booking, err := h.store.Booking.GetBookingByID(c.Context(), id)
 	if err != nil {
-		return err
+		return ErrNotResourceNotFound("booking")
 	}
 	user, err := getAuthUser(c)
 	if err != nil {
-		return err
+		return ErrUnAuthorized()
 	}
 	if booking.UserID != user.ID {
-		return c.Status(http.StatusUnauthorized).JSON(genericResp{
-			Type: "error",
-			Msg: "not authorized",
-		})
+		return ErrUnAuthorized()
 	}
 	return c.JSON(booking)
 }
